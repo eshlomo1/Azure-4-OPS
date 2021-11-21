@@ -1,0 +1,53 @@
+# Azure Container Apps - Hands-On with Azure CLI 
+
+### install Azure Container Apps 
+az extension add \
+ --source https://workerappscliextension.blob.core.windows.net/azure-cli-extension/containerapp-0.2.0-py2.py3-none-any.whl
+ 
+### Create an Azure Container App environment
+
+# variables
+location="westeurope"
+rgName="rg-capps"
+lawName="law-capps"
+containerAppEnvName="env-capps"
+
+# Create Resource Group
+az group create -n $rgName -l $location
+
+# Create Log Analytics Workspace
+az monitor log-analytics workspace create \
+ -n $lawName \
+ -g $rgName
+
+# Grab Log Analytics Workspace ClientId
+lawClientId=$(az monitor log-analytics workspace show \
+ --query customerId \
+ -g $rgName \
+ -n $lawName \
+ --out tsv)
+
+# Grab Log Analytics Workspace ClientSecret
+lawClientSecret=$(az monitor log-analytics workspace get-shared-keys --query primarySharedKey \
+ -g $rgName \
+ -n $lawName \
+ --out tsv)
+
+# Create Azure Container App Environment
+az containerapp env create \
+ -n $containerAppEnvName \
+ -g $rgName \
+ --logs-workspace-id $lawClientId \
+ --logs-workspace-key $lawClientSecret \
+ -l $location
+ 
+ ### Deploy a Container to Azure Container Apps (NGINX example)
+ 
+ az containerapp create \
+ -n sample-nginx\
+ -g $rgName\
+ --environment $containerAppEnvName\
+ --image nginx:latest \
+ --target-port 80 \
+ --ingress 'external' \
+ --query configuration.ingress.fqdn
